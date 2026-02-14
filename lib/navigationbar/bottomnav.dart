@@ -1,0 +1,76 @@
+import 'package:flutter/material.dart';
+import 'package:trip_admin/home.dart';
+import 'package:trip_admin/navigationbar/addpage.dart';
+import 'package:trip_admin/navigationbar/first.dart';
+import 'package:trip_admin/navigationbar/profile.dart';
+import 'package:trip_admin/navigationbar/categories.dart';
+import 'package:trip_admin/navigationbar/categories.dart'; // add this page if you haven’t
+
+class BottomNavBar extends StatefulWidget {
+  const BottomNavBar({super.key});
+
+  @override
+  State<BottomNavBar> createState() => _BottomNavBarState();
+}
+
+class _BottomNavBarState extends State<BottomNavBar> {
+  int _currentIndex = 0;
+
+  final List<Widget> _pages = const [
+    Home(),          // Home
+    Categories(), // Categories
+    Addpage(),        // Add
+    Profile(),        // Profile
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: Colors.indigo,
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: true,
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.category_outlined),
+              activeIcon: Icon(Icons.category),
+              label: "Categories",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.add_circle_outline),
+              activeIcon: Icon(Icons.add_circle),
+              label: "Add",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: "Profile",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

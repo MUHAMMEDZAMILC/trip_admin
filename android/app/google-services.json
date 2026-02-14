@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "725147266653",
+    "project_id": "trip-plan-d5e08",
+    "storage_bucket": "trip-plan-d5e08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725147266653:android:13d7126495bca27439e7b4",
+        "android_client_info": {
+          "package_name": "com.example.trip_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZvQgMxJ6_p80HHacyQEavD_EnqMGiJNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725147266653:android:782c62e629b73a2e39e7b4",
+        "android_client_info": {
+          "package_name": "com.example.trip_plan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZvQgMxJ6_p80HHacyQEavD_EnqMGiJNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
