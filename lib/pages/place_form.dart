@@ -8,22 +8,15 @@ import 'package:trip_admin/Hotel/hotelpage.dart';
 import 'package:trip_admin/Meals/meals.dart';
 import 'package:trip_admin/model/hotelmodel.dart';
 import 'package:trip_admin/model/mainplacemodel.dart';
-import 'package:trip_admin/pages/addactivities.dart';
-import 'package:trip_admin/pages/addhotel.dart';
-import 'package:trip_admin/pages/addmeals.dart';
-import 'package:trip_admin/service/cloudinary_service.dart';
 
-class Addpage extends StatefulWidget {
-  final Map<String, dynamic>? placeData;
-  final String? docId;
-
-  const Addpage({super.key, this.placeData, this.docId});
+class PlaceForm extends StatefulWidget {
+  const PlaceForm({super.key});
 
   @override
-  State<Addpage> createState() => _AddCategoryPageState();
+  State<PlaceForm> createState() => _PlaceFormState();
 }
 
-class _AddCategoryPageState extends State<Addpage> {
+class _PlaceFormState extends State<PlaceForm> {
   final TextEditingController placeCtrl = TextEditingController();
   final TextEditingController descCtrl = TextEditingController();
   List<Hotelmodel> selectedHotels = [];
@@ -50,7 +43,7 @@ class _AddCategoryPageState extends State<Addpage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(title: const Text('Add New Place')),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -64,14 +57,56 @@ class _AddCategoryPageState extends State<Addpage> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 5),
-            TextField(
-              controller: placeCtrl,
-              decoration: InputDecoration(
-                hintText: "Enter place name",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            StreamBuilder<List<MainPlace>>(
+              stream: FirebaseFirestore.instance
+                  .collection('MainPlace')
+                  .snapshots()
+                  .map(
+                    (snapshot) => snapshot.docs
+                        .map((doc) => MainPlace.fromMap(doc.data(), doc.id))
+                        .toList(),
+                  ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Text("No places available");
+                }
+
+                var places = snapshot.data!;
+                // Ensure initial value is valid or null
+                String? initialValue;
+                if (placeCtrl.text.isNotEmpty &&
+                    places.any((p) => p.place == placeCtrl.text)) {
+                  initialValue = placeCtrl.text;
+                }
+
+                return DropdownButtonFormField<String>(
+                  value: initialValue,
+                  items: places
+                      .map(
+                        (place) => DropdownMenuItem(
+                          value: place.place,
+                          child: Text(place.place),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        placeCtrl.text = value;
+                      });
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Select place name",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 20),

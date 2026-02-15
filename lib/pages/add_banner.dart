@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:trip_admin/service/cloudinary_service.dart';
+import 'package:trip_admin/model/mainplacemodel.dart';
 
 class AddBanner extends StatefulWidget {
   final bool isEdit;
@@ -29,10 +30,11 @@ class AddBanner extends StatefulWidget {
 
 class _AddBannerState extends State<AddBanner> {
   final TextEditingController titleController = TextEditingController();
-  final TextEditingController placeController = TextEditingController();
   final TextEditingController descController = TextEditingController();
   XFile? selectedImage;
   bool isUploading = false;
+  MainPlace? selectedPlace;
+  Map<String, dynamic>? selectedPlaceFullData;
 
   final CloudneryUploader uploader = CloudneryUploader();
 
@@ -41,8 +43,48 @@ class _AddBannerState extends State<AddBanner> {
     super.initState();
     if (widget.isEdit) {
       titleController.text = widget.title!;
-      placeController.text = widget.place!;
       descController.text = widget.description!;
+      _loadPlaceDetails();
+    }
+  }
+
+  Future<void> _loadPlaceDetails() async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('Places')
+          .where('place', isEqualTo: widget.place)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        setState(() {
+          selectedPlace = MainPlace.fromMap(
+            doc.data() as Map<String, dynamic>,
+            doc.id,
+          );
+          selectedPlaceFullData = doc.data() as Map<String, dynamic>;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading place details: $e');
+    }
+  }
+
+  Future<void> _fetchCompletePlace(String placeId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('Places')
+          .doc(placeId)
+          .get();
+
+      if (doc.exists) {
+        setState(() {
+          selectedPlaceFullData = doc.data() as Map<String, dynamic>;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching complete place: $e');
     }
   }
 
@@ -67,11 +109,11 @@ class _AddBannerState extends State<AddBanner> {
       return;
     }
     if (titleController.text.isEmpty ||
-        placeController.text.isEmpty ||
+        selectedPlace == null ||
         descController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Please fill all fields"),
+          content: Text("Please fill all fields and select a place"),
           backgroundColor: Colors.red,
         ),
       );
@@ -93,10 +135,10 @@ class _AddBannerState extends State<AddBanner> {
       try {
         if (widget.isEdit) {
           Map<String, dynamic> updateData = {
-            "title": titleController.text,
-            "place": placeController.text,
-            "description": descController.text,
+            "bannername": titleController.text,
             "image": imageUrl,
+            "place": selectedPlaceFullData,
+            "description": descController.text,
           };
           await FirebaseFirestore.instance
               .collection("bannerslide")
@@ -110,10 +152,10 @@ class _AddBannerState extends State<AddBanner> {
           );
         } else {
           Map<String, dynamic> addData = {
-            "title": titleController.text,
-            "place": placeController.text,
-            "description": descController.text,
+            "bannername": titleController.text,
             "image": imageUrl,
+            "place": selectedPlaceFullData,
+            "description": descController.text,
           };
           await FirebaseFirestore.instance
               .collection("bannerslide")
@@ -165,6 +207,7 @@ class _AddBannerState extends State<AddBanner> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image Picker
             GestureDetector(
               onTap: pickImage,
               child: Container(
@@ -209,6 +252,8 @@ class _AddBannerState extends State<AddBanner> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Title Field
             const Text(
               "Title",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -224,21 +269,76 @@ class _AddBannerState extends State<AddBanner> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Place Selection Dropdown
             const Text(
               "Place",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: placeController,
-              decoration: InputDecoration(
-                hintText: "Enter place name",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('Places')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Text("No places available");
+                }
+
+                var places = snapshot.data!.docs
+                    .map(
+                      (doc) => MainPlace.fromMap(
+                        doc.data() as Map<String, dynamic>,
+                        doc.id,
+                      ),
+                    )
+                    .toList();
+
+                String? initialValue;
+                if (selectedPlace != null) {
+                  initialValue = selectedPlace!.id;
+                }
+
+                return DropdownButtonFormField<String>(
+                  value: initialValue,
+                  items: places
+                      .map(
+                        (place) => DropdownMenuItem(
+                          value: place.id,
+                          child: Text(place.place),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      final selected = places.firstWhere((p) => p.id == value);
+                      setState(() {
+                        selectedPlace = selected;
+                        _fetchCompletePlace(value);
+                      });
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a place';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Select place",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
+
+            // Description Field
             const Text(
               "Description",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -248,13 +348,15 @@ class _AddBannerState extends State<AddBanner> {
               controller: descController,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: "Enter description",
+                hintText: "Enter banner description",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
             const SizedBox(height: 30),
+
+            // Submit Button
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -268,9 +370,9 @@ class _AddBannerState extends State<AddBanner> {
                 ),
                 child: isUploading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Add Banner",
-                        style: TextStyle(
+                    : Text(
+                        widget.isEdit ? "Update Banner" : "Add Banner",
+                        style: const TextStyle(
                           fontSize: 18,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -282,5 +384,12 @@ class _AddBannerState extends State<AddBanner> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    super.dispose();
   }
 }

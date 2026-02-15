@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:trip_admin/auth/splashpage.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Set up error handling
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
@@ -25,39 +26,46 @@ void main() async {
   };
 
   // Run in zone to catch async errors
-  runZonedGuarded(() async {
-    try {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      
+  runZonedGuarded(
+    () async {
       try {
-        await Firebase.initializeApp();
-      } catch (e) {
-        debugPrint('Firebase initialization error: $e');
-        // Continue with app launch even if Firebase fails
-      }
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-      runApp(const MyApp());
-    } catch (e, stackTrace) {
-      debugPrint('Error in main: $e');
+        try {
+          await Firebase.initializeApp();
+        } catch (e) {
+          debugPrint('Firebase initialization error: $e');
+          // Continue with app launch even if Firebase fails
+        }
+
+        runApp(const MyApp());
+      } catch (e, stackTrace) {
+        debugPrint('Error in main: $e');
+        debugPrint('Stack trace: $stackTrace');
+        // Still run the app even if there's an error
+        runApp(const MyApp());
+      }
+    },
+    (error, stackTrace) {
+      debugPrint('Uncaught error: $error');
       debugPrint('Stack trace: $stackTrace');
-      // Still run the app even if there's an error
-      runApp(const MyApp());
-    }
-  }, (error, stackTrace) {
-    debugPrint('Uncaught error: $error');
-    debugPrint('Stack trace: $stackTrace');
-  });
+    },
+  );
 }
-class MyApp extends StatelessWidget { 
+
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const SplashPage(),
+    return ScreenUtilInit(
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (_, child) {
+        return MaterialApp(debugShowCheckedModeBanner: false, home: child);
+      },
+      child: const SplashPage(),
     );
   }
 }
-
-
