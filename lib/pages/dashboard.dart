@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:trip_admin/pages/add_banner.dart';
+import 'package:trip_admin/pages/view_bookings.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -139,7 +140,7 @@ class _DashboardState extends State<Dashboard> {
                       "Dashboard Overview",
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        fontSize: 20,
+                        fontSize: 13,
                         color: Color(0xFF1E1E2C),
                         letterSpacing: -0.5,
                       ),
@@ -150,6 +151,17 @@ class _DashboardState extends State<Dashboard> {
             ],
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Bookingpage()),
+              );
+            },
+            child: Text("View Bookings"),
+          ),
+        ],
       ),
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: bannersStream,
