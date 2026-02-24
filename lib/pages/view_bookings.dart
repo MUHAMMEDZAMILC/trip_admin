@@ -188,25 +188,7 @@ class BookingCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Positioned(
-              //   top: 12.h,
-              //   left: 12.w,
-              //   child: GestureDetector(
-              //     onTap: () => _confirmDeletion(context),
-              //     child: Container(
-              //       padding: EdgeInsets.all(8.r),
-              //       decoration: BoxDecoration(
-              //         color: Colors.white.withOpacity(0.9),
-              //         shape: BoxShape.circle,
-              //       ),
-              //       child: Icon(
-              //         Icons.delete_outline,
-              //         color: Colors.red[400],
-              //         size: 20.sp,
-              //       ),
-              //     ),
-              //   ),
-              // ),
+             
               Positioned(
                 top: 12.h,
                 right: 12.w,
@@ -297,6 +279,10 @@ class BookingCard extends StatelessWidget {
                 SizedBox(height: 16.h),
                 const DottedLine(dashColor: Colors.black12, dashGapLength: 6),
                 SizedBox(height: 16.h),
+
+                Text("User Email : ${data['userEmail'] ?? 'N/A'}",
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600])),
+                    SizedBox(height: 12.h),
 
                 Row(
                   children: [
