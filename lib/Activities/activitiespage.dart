@@ -10,17 +10,16 @@ class Activitiespage extends StatefulWidget {
 }
 
 class _ActivitiespageState extends State<Activitiespage> {
-  // Store selected activity IDs
-  Set<String> selectedActivities = {};
+  // Store selected activity objects
+  List<Map<String, dynamic>> selectedActivities = [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(),
+      appBar: AppBar(title: const Text("Select Activities"), centerTitle: true),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance.collection('Activities').snapshots(),
+        stream: FirebaseFirestore.instance.collection('Activities').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -31,9 +30,10 @@ class _ActivitiespageState extends State<Activitiespage> {
               child: Text(
                 'No activities yet',
                 style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500),
+                  fontSize: 18,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             );
           }
@@ -46,16 +46,14 @@ class _ActivitiespageState extends State<Activitiespage> {
             itemBuilder: (context, index) {
               final activity = activities[index];
               final activityId = activity.id;
+              final activityTitle = activity["title"];
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.white,
-                      Colors.blue[50]!,
-                    ],
+                    colors: [Colors.white, Colors.blue[50]!],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -79,10 +77,7 @@ class _ActivitiespageState extends State<Activitiespage> {
                           height: 70,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [
-                                Colors.blue[400]!,
-                                Colors.blue[600]!,
-                              ],
+                              colors: [Colors.blue[400]!, Colors.blue[600]!],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -102,7 +97,7 @@ class _ActivitiespageState extends State<Activitiespage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                activity["title"],
+                                activityTitle,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -122,12 +117,16 @@ class _ActivitiespageState extends State<Activitiespage> {
                               const SizedBox(height: 10),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.green[50],
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                      color: Colors.green[200]!, width: 1),
+                                    color: Colors.green[200]!,
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Text(
                                   "₹${activity["price"]}",
@@ -144,13 +143,22 @@ class _ActivitiespageState extends State<Activitiespage> {
 
                         // Right Checkbox
                         Checkbox(
-                          value: selectedActivities.contains(activityId),
+                          value: selectedActivities.any(
+                            (a) => a['id'] == activityId,
+                          ),
                           onChanged: (value) {
                             setState(() {
                               if (value == true) {
-                                selectedActivities.add(activityId);
+                                selectedActivities.add({
+                                  "id": activityId,
+                                  "title": activityTitle,
+                                  "price": activity["price"],
+                                  "description": activity["description"],
+                                });
                               } else {
-                                selectedActivities.remove(activityId);
+                                selectedActivities.removeWhere(
+                                  (a) => a['id'] == activityId,
+                                );
                               }
                             });
                           },
@@ -165,39 +173,28 @@ class _ActivitiespageState extends State<Activitiespage> {
         },
       ),
 
-      // Submit Button
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
-          onPressed: () async {
+          onPressed: () {
             if (selectedActivities.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text("Please select at least one activity")));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Please select at least one activity"),
+                ),
+              );
               return;
             }
-
-            // Save to Firestore
-            await FirebaseFirestore.instance
-                .collection("SelectedActivities")
-                .add({
-              "selectedActivityIds": selectedActivities.toList(),
-              "created_at": Timestamp.now(),
-            });
-
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("Activities Saved Successfully!")));
-
-            Navigator.pop(context);
+            // Return selected activity objects
+            Navigator.pop(context, selectedActivities);
           },
-          child: const Text(
-            "Submit",
-            style: TextStyle(fontSize: 18),
-          ),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
+          child: const Text("Submit", style: TextStyle(fontSize: 18)),
         ),
       ),
 
@@ -206,12 +203,12 @@ class _ActivitiespageState extends State<Activitiespage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Addactivities()),
+            MaterialPageRoute(builder: (context) => const Addactivities()),
           );
         },
         backgroundColor: const Color.fromARGB(255, 226, 214, 222),
         icon: const Icon(Icons.add),
-        label: const Text(''),
+        label: const Text('Add New'),
       ),
     );
   }

@@ -10,8 +10,8 @@ class Meals extends StatefulWidget {
 }
 
 class _MealsState extends State<Meals> {
-  // Store selected meal IDs
-  Set<String> selectedMeals = {};
+  // Store selected meal objects
+  List<Map<String, dynamic>> selectedMeals = [];
 
   IconData _getFoodIcon(String title) {
     final lowerTitle = title.toLowerCase();
@@ -36,11 +36,11 @@ class _MealsState extends State<Meals> {
 
   List<Color> _getGradientColors(int index) {
     final gradients = [
-      [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-      [Color(0xFF4ECDC4), Color(0xFF44A08D)],
-      [Color(0xFFFFBE0B), Color(0xFFFB5607)],
-      [Color(0xFF9B59B6), Color(0xFF8E44AD)],
-      [Color(0xFF3498DB), Color(0xFF2980B9)],
+      [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)],
+      [const Color(0xFF4ECDC4), const Color(0xFF44A08D)],
+      [const Color(0xFFFFBE0B), const Color(0xFFFB5607)],
+      [const Color(0xFF9B59B6), const Color(0xFF8E44AD)],
+      [const Color(0xFF3498DB), const Color(0xFF2980B9)],
     ];
     return gradients[index % gradients.length];
   }
@@ -48,7 +48,7 @@ class _MealsState extends State<Meals> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(title: const Text("Select Meals"), centerTitle: true),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('Meals').snapshots(),
         builder: (context, snapshot) {
@@ -65,6 +65,7 @@ class _MealsState extends State<Meals> {
               final meal = meals[index];
               final gradientColors = _getGradientColors(index);
               final mealId = meal.id;
+              final mealTitle = meal["title"];
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -101,7 +102,7 @@ class _MealsState extends State<Meals> {
                           ),
                         ),
                         child: Icon(
-                          _getFoodIcon(meal["title"]),
+                          _getFoodIcon(mealTitle),
                           size: 50,
                           color: Colors.white,
                         ),
@@ -115,7 +116,7 @@ class _MealsState extends State<Meals> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                meal["title"],
+                                mealTitle,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -144,13 +145,21 @@ class _MealsState extends State<Meals> {
 
                       // RIGHT CHECKBOX
                       Checkbox(
-                        value: selectedMeals.contains(mealId),
+                        value: selectedMeals.any((m) => m['id'] == mealId),
                         onChanged: (value) {
                           setState(() {
                             if (value == true) {
-                              selectedMeals.add(mealId);
+                              selectedMeals.add({
+                                "id": mealId,
+                                "title": mealTitle,
+                                "price": meal["price"],
+                                "items": meal["items"],
+                                "time": meal["time"] ?? "",
+                              });
                             } else {
-                              selectedMeals.remove(mealId);
+                              selectedMeals.removeWhere(
+                                (m) => m['id'] == mealId,
+                              );
                             }
                           });
                         },
@@ -169,7 +178,7 @@ class _MealsState extends State<Meals> {
         padding: const EdgeInsets.all(16),
         child: ElevatedButton(
           onPressed: () {
-            Navigator.pop(context, selectedMeals.toList());
+            Navigator.pop(context, selectedMeals);
           },
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -177,10 +186,7 @@ class _MealsState extends State<Meals> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            "Submit",
-            style: TextStyle(fontSize: 18),
-          ),
+          child: const Text("Submit", style: TextStyle(fontSize: 18)),
         ),
       ),
 
@@ -188,7 +194,7 @@ class _MealsState extends State<Meals> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => Addmeals()),
+            MaterialPageRoute(builder: (context) => const Addmeals()),
           );
         },
         child: const Icon(Icons.add),

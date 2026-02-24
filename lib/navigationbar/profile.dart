@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trip_admin/auth/auth.dart';
 import 'package:trip_admin/login.dart';
 
 class Profile extends StatelessWidget {
@@ -31,7 +32,7 @@ class Profile extends StatelessWidget {
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text("Logout"),
               onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context)=>Login()));
+                Authservice().logout(context);
               },
             ),
           ],

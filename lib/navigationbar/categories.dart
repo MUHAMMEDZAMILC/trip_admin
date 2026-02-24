@@ -90,7 +90,9 @@ class Categories extends StatelessWidget {
         stream: FirebaseFirestore.instance.collection('MainPlace').snapshots(),
         builder: (context, asyncSnapshot) {
           if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF6F77A8)),
+            );
           }
 
           if (!asyncSnapshot.hasData || asyncSnapshot.data!.docs.isEmpty) {
@@ -98,7 +100,7 @@ class Categories extends StatelessWidget {
               child: Text(
                 "No categories found",
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
@@ -106,8 +108,14 @@ class Categories extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
             itemCount: asyncSnapshot.data!.docs.length,
             itemBuilder: (context, index) {
               var doc = asyncSnapshot.data!.docs[index];
@@ -118,119 +126,120 @@ class Categories extends StatelessWidget {
               String description = (data['description'] as String?) ?? '';
               String imageUrl = (data['image'] as String?) ?? '';
 
-              // Fallback placeholder
               if (imageUrl.isEmpty || imageUrl == 'N/A') {
                 imageUrl = "https://via.placeholder.com/150";
               }
 
               return Container(
-                margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 15,
-                      offset: const Offset(0, 5),
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // Image Section with Edit/Delete Buttons Overlay
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                          child: Image.network(
-                            imageUrl,
-                            height: 180,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                                  height: 180,
-                                  color: Colors.grey.shade200,
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    Icons.broken_image,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                          ),
-                        ),
-
-                        // Action Buttons
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Row(
-                            children: [
-                              _actionButton(
-                                icon: Icons.edit,
-                                color: Colors.blueAccent,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AddmainplaceScreen(
-                                        isEdit: true,
-                                        documentId: id,
-                                        existingPlace: place,
-                                        existingDesc: description,
-                                        existingImage: imageUrl,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image Section
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: Colors.grey.shade100,
+                                      child: const Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey,
                                       ),
                                     ),
-                                  );
-                                },
                               ),
-                              const SizedBox(width: 8),
-                              _actionButton(
-                                icon: Icons.delete_outline,
-                                color: Colors.redAccent,
-                                onTap: () => _deleteCategory(context, id),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    // Content Section
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            place,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
                             ),
-                          ),
-                          if (description.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              description,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade600,
-                                height: 1.5,
+                            // Action Buttons Overlay
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Column(
+                                children: [
+                                  _actionButton(
+                                    icon: Icons.edit_rounded,
+                                    color: Colors.blueAccent,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              AddmainplaceScreen(
+                                                isEdit: true,
+                                                documentId: id,
+                                                existingPlace: place,
+                                                existingDesc: description,
+                                                existingImage: imageUrl,
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _actionButton(
+                                    icon: Icons.delete_outline_rounded,
+                                    color: Colors.redAccent,
+                                    onTap: () => _deleteCategory(context, id),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                      // Content Section
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              place,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF1E1E2C),
+                                letterSpacing: -0.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (description.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

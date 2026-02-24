@@ -6,12 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:trip_admin/Activities/activitiespage.dart';
 import 'package:trip_admin/Hotel/hotelpage.dart';
 import 'package:trip_admin/Meals/meals.dart';
+import 'package:trip_admin/model/nearvymodel.dart';
+import 'package:trip_admin/pages/addnearby.dart';
+import 'package:trip_admin/service/cloudinary_service.dart';
+import 'package:uuid/uuid.dart';
 import 'package:trip_admin/model/hotelmodel.dart';
 import 'package:trip_admin/model/mainplacemodel.dart';
-import 'package:trip_admin/pages/addactivities.dart';
-import 'package:trip_admin/pages/addhotel.dart';
-import 'package:trip_admin/pages/addmeals.dart';
-import 'package:trip_admin/service/cloudinary_service.dart';
 
 class Addpage extends StatefulWidget {
   final Map<String, dynamic>? placeData;
@@ -27,15 +27,13 @@ class _AddCategoryPageState extends State<Addpage> {
   final TextEditingController placeCtrl = TextEditingController();
   final TextEditingController descCtrl = TextEditingController();
   List<Hotelmodel> selectedHotels = [];
-
+  List<Map<String, dynamic>> selectedActivities = [];
+  List<Map<String, dynamic>> selectedMeals = [];
+  List<Nearbymodel> selectedNearby = [];
   MainPlace? selectedValue;
-  final List<String> options = ['Option A', 'Option B', 'Option C', 'Option D'];
-
-  List<String> imageList = [];
-
-  XFile? selimage;
-  XFile? selimage2;
+  List<XFile> selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+  bool isUploading = false;
 
   Stream<List<MainPlace>> getMainPlaces() {
     return FirebaseFirestore.instance.collection('MainPlace').snapshots().map((
@@ -47,272 +45,628 @@ class _AddCategoryPageState extends State<Addpage> {
     });
   }
 
+  Future<void> _pickImages() async {
+    final List<XFile> pickedImages = await _picker.pickMultiImage();
+    if (pickedImages.isNotEmpty) {
+      setState(() {
+        selectedImages.addAll(pickedImages);
+      });
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      selectedImages.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-            // ---------- Place Name ----------
-            const Text(
-              "Place Name",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-            TextField(
-              controller: placeCtrl,
-              decoration: InputDecoration(
-                hintText: "Enter place name",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            StreamBuilder<List<MainPlace>>(
-              stream: getMainPlaces(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Text("No places found");
-                }
-
-                final places = snapshot.data!;
-
-                return DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: "Select Main Place",
-                    border: OutlineInputBorder(),
-                  ),
-
-                  value: selectedValue?.id, // <---- STRING ID
-
-                  items: places.map((place) {
-                    return DropdownMenuItem(
-                      value: place.id, // <---- Use ID
-                      child: Text(place.title),
-                    );
-                  }).toList(),
-
-                  onChanged: (value) {
-                    for (var i = 0; i < places.length; i++) {
-                      if (places[i].id == value) {
-                        setState(() {
-                          selectedValue = places[i]; // save place ID
-                        });
-                      }
-                    }
-                  },
-                );
-              },
-            ),
-
-            SizedBox(height: 20),
-
-            // ---------- Description ----------
-            const Text(
-              "Description",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-            TextField(
-              controller: descCtrl,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: "Enter description",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            const Text(
-              "Add 2 Pictures",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            Row(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text(
+          "Add New Place",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _imageBox(() async {
-                  final XFile? picked = await _picker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      selimage = XFile(picked.path);
-                    });
-                  }
-                }, selimage),
-                _imageBox(() async {
-                  final XFile? picked = await _picker.pickImage(
-                    source: ImageSource.gallery,
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      selimage2 = XFile(picked.path);
-                    });
-                  }
-                }, selimage2),
+                _buildSectionHeader("Basic Details"),
+                const SizedBox(height: 12),
+                _buildCardWrapper([
+                  _buildCustomTextField(
+                    controller: placeCtrl,
+                    label: "Place Name",
+                    hint: "Enter place name",
+                    icon: Icons.place_outlined,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildMainPlaceDropdown(),
+                  const SizedBox(height: 20),
+                  _buildCustomTextField(
+                    controller: descCtrl,
+                    label: "Description",
+                    hint: "Enter description",
+                    icon: Icons.description_outlined,
+                    maxLines: 4,
+                  ),
+                ]),
+                const SizedBox(height: 24),
+                _buildSectionHeader("Media"),
+                const SizedBox(height: 12),
+                _buildImageSection(),
+                const SizedBox(height: 24),
+                _buildSectionHeader("Associated Services"),
+                const SizedBox(height: 12),
+                _buildServiceButtons(),
+                const SizedBox(height: 40),
+                _buildSubmitButton(),
+                const SizedBox(height: 40),
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            // ---------- Add Hotel ----------
-            _adminButton(
-              "Add Hotel",
-              Icons.hotel,
-              const Color.fromARGB(255, 220, 222, 221),
-              () async {
-                List<Hotelmodel> result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Hotelpage()),
-                );
-
-                selectedHotels = result;
-                setState(() {});
-
-                log('hi');
-              },
-            ),
-
-            selectedHotels.isEmpty
-                ? Text("No hotels selected")
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: selectedHotels.length,
-                    itemBuilder: (context, index) {
-                      return ListTile(
-                        leading: Icon(Icons.hotel),
-                        title: Text(selectedHotels[index].hotel),
-                      );
-                    },
-                  ),
-
-            const SizedBox(height: 15),
-
-            // ---------- Add Activities ----------
-            _adminButton(
-              "Add Activities",
-              Icons.sports_soccer,
-              const Color.fromARGB(255, 219, 216, 212),
-              () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Activitiespage()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 15),
-
-            // ---------- Add Meals ----------
-            _adminButton(
-              "Add Meals",
-              Icons.restaurant,
-              const Color.fromARGB(255, 215, 211, 211),
-              () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Meals()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 30),
-
-            // ---------- Submit Button ----------
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: const Color.fromARGB(255, 111, 119, 168),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text("Submit", style: TextStyle(fontSize: 18)),
+          ),
+          if (isUploading)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.deepOrange),
               ),
             ),
-
-            const SizedBox(height: 40),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  List<DropdownMenuItem<String>> _buildDropdownMenuItems(List<String> items) {
-    return items.map((String item) {
-      return DropdownMenuItem<String>(value: item, child: Text(item));
-    }).toList();
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
   }
 
-  // --------------------------- Image Box Widget ----------------------------
-  Widget _imageBox(Function()? onTap, XFile? file) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 110,
-          margin: const EdgeInsets.only(right: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade400),
-            color: Colors.grey.shade200,
+  Widget _buildCardWrapper(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          child: file == null
-              ? Icon(Icons.add_a_photo, size: 40, color: Colors.black54)
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(
-                    File(file.path),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildCustomTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: Colors.deepOrange, size: 20),
+            filled: true,
+            fillColor: Colors.grey[50],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[200]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.deepOrange),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainPlaceDropdown() {
+    return StreamBuilder<List<MainPlace>>(
+      stream: getMainPlaces(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.deepOrange),
+          );
+        }
+
+        final places = snapshot.data ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Main Place",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                prefixIcon: const Icon(
+                  Icons.map_outlined,
+                  color: Colors.deepOrange,
+                  size: 20,
                 ),
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[200]!),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              value: selectedValue?.id,
+              items: places.map((place) {
+                return DropdownMenuItem(
+                  value: place.id,
+                  child: Text(place.title),
+                );
+              }).toList(),
+              onChanged: (value) {
+                final place = places.firstWhere((p) => p.id == value);
+                setState(() {
+                  selectedValue = place;
+                });
+              },
+              hint: const Text("Select main category"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildImageSection() {
+    return _buildCardWrapper([
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            "Place Images",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black54,
+            ),
+          ),
+          TextButton.icon(
+            onPressed: _pickImages,
+            icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
+            label: const Text("Add More"),
+            style: TextButton.styleFrom(foregroundColor: Colors.deepOrange),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      if (selectedImages.isEmpty)
+        GestureDetector(
+          onTap: _pickImages,
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.grey[200]!,
+                width: 1.5,
+                style: BorderStyle.none,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add_a_photo_outlined,
+                  size: 40,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Select Multiple Images",
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        )
+      else
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: selectedImages.length,
+            itemBuilder: (context, index) {
+              return Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: FileImage(File(selectedImages[index].path)),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 5,
+                    right: 17,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+    ]);
+  }
+
+  Widget _buildSelectedItemsList(List<String> items, Color color) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: SizedBox(
+        height: 35,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withOpacity(0.3)),
+              ),
+              child: Text(
+                items[index],
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  // --------------------------- Admin Buttons ----------------------------
-  Widget _adminButton(
+  Widget _buildServiceButtons() {
+    return Column(
+      children: [
+        _serviceRowButton(
+          "Manage Hotels",
+          Icons.hotel_outlined,
+          Colors.blue[50]!,
+          Colors.blue,
+          () async {
+            final List<Hotelmodel>? result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const Hotelpage()),
+            );
+            if (result != null) setState(() => selectedHotels = result);
+          },
+          trailingText: selectedHotels.isNotEmpty
+              ? "${selectedHotels.length} selected"
+              : null,
+          child: _buildSelectedItemsList(
+            selectedHotels.map((h) => h.hotel).toList(),
+            Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _serviceRowButton(
+          "Manage Activities",
+          Icons.sports_soccer_outlined,
+          Colors.green[50]!,
+          Colors.green,
+          () async {
+            final List<Map<String, dynamic>>? result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const Activitiespage()),
+            );
+            if (result != null) setState(() => selectedActivities = result);
+          },
+          trailingText: selectedActivities.isNotEmpty
+              ? "${selectedActivities.length} selected"
+              : null,
+          child: _buildSelectedItemsList(
+            selectedActivities.map((a) => a['title'] as String).toList(),
+            Colors.green,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _serviceRowButton(
+          "Manage Meals",
+          Icons.restaurant_menu_outlined,
+          Colors.orange[50]!,
+          Colors.orange,
+          () async {
+            final List<Map<String, dynamic>>? result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const Meals()),
+            );
+            if (result != null) setState(() => selectedMeals = result);
+          },
+          trailingText: selectedMeals.isNotEmpty
+              ? "${selectedMeals.length} selected"
+              : null,
+          child: _buildSelectedItemsList(
+            selectedMeals.map((m) => m['title'] as String).toList(),
+            Colors.orange,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _serviceRowButton(
+          "Manage Nearby Places",
+          Icons.location_on_outlined,
+          Colors.purple[50]!,
+          Colors.purple,
+          () async {
+            final List<Nearbymodel>? result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddNearby()),
+            );
+            if (result != null) setState(() => selectedNearby = result);
+          },
+          trailingText: selectedNearby.isNotEmpty
+              ? "${selectedNearby.length} selected"
+              : null,
+          child: _buildSelectedItemsList(
+            selectedNearby.map((n) => n.title ?? "").toList(),
+            Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _serviceRowButton(
     String title,
     IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return SizedBox(
+    Color bgColor,
+    Color iconColor,
+    VoidCallback onTap, {
+    String? trailingText,
+    Widget? child,
+  }) {
+    return Column(
+      children: [
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.2),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: iconColor),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (trailingText != null)
+                          Text(
+                            trailingText,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (child != null) child,
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 24),
-        label: Text(title, style: const TextStyle(fontSize: 18)),
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Colors.deepOrange, Colors.orangeAccent],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepOrange.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _submitPlace,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: const Text(
+          "SUBMIT PLACE",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: 1.2,
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _submitPlace() async {
+    if (placeCtrl.text.isEmpty || selectedValue == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in the required fields")),
+      );
+      return;
+    }
+
+    if (selectedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please add at least one image")),
+      );
+      return;
+    }
+
+    setState(() => isUploading = true);
+
+    try {
+      final List<String> imageUrls = [];
+      for (var image in selectedImages) {
+        final url = await CloudneryUploader().uploadFile(image);
+        if (url != null) imageUrls.add(url);
+      }
+
+      var uuid = const Uuid();
+      String placeId = uuid.v4();
+
+      await FirebaseFirestore.instance.collection('Placess').doc(placeId).set({
+        "id": placeId,
+        "place": placeCtrl.text,
+        "description": descCtrl.text,
+        "mainplace": {
+          "id": selectedValue!.id,
+          "place": selectedValue!.title,
+          "imageUrl": selectedValue!.imageUrl,
+          "description": selectedValue!.description,
+        },
+        "images": imageUrls,
+        "hotels": selectedHotels.map((h) => h.toMap()).toList(),
+        "activities": selectedActivities,
+        "meals": selectedMeals,
+        "nearby": selectedNearby.map((n) => n.toMap()).toList(),
+        "created_at": Timestamp.now(),
+      });
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Place Added Successfully!")),
+        );
+      }
+    } catch (e) {
+      log("Error adding place: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error adding place: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => isUploading = false);
+    }
   }
 }

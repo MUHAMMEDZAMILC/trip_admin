@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:trip_admin/login.dart';
 import 'package:trip_admin/navigationbar/bottomnav.dart';
+import 'package:trip_admin/navigationbar/vendor_bottomnav.dart';
 
 
 class SplashPage extends StatefulWidget {
@@ -40,12 +41,18 @@ class _SplashPageState extends State<SplashPage>
       try {
         final prefs = await SharedPreferences.getInstance();
         var uid = prefs.getString("uid");
+        var role = prefs.getString("role");
         if (!mounted) return;
         
-        if (uid != null && uid.isNotEmpty) {
-          Navigator.pushReplacement(
+        if (role == "admin") {
+           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const BottomNavBar()),
+          );
+        } else if (uid != null && uid.isNotEmpty && role == "vendor") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const VendorBottomNavBar()),
           );
         } else {
           Navigator.pushReplacement(

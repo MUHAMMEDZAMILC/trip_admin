@@ -16,7 +16,7 @@ class Hotelpage extends StatefulWidget {
 class _HotelpageState extends State<Hotelpage> {
   // Store selected hotel IDs
   List<Hotelmodel> selectedHotels = [];
-  List<String> selecthotelids =[];
+  List<String> selecthotelids = [];
 
   @override
   Widget build(BuildContext context) {
@@ -25,68 +25,82 @@ class _HotelpageState extends State<Hotelpage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('Hotels').snapshots(),
         builder: (context, snapshot) {
-            if (!snapshot.hasData) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-            }
+          }
 
-            
-            final hotelModels = snapshot.data!.docs
-    .map((doc) => Hotelmodel.fromJson(doc.data() as Map<String, dynamic>))
-    .toList();
+          final hotelModels = snapshot.data!.docs
+              .map(
+                (doc) =>
+                    Hotelmodel.fromJson(doc.data() as Map<String, dynamic>),
+              )
+              .toList();
 
-
-            
-
-            return ListView.builder(
+          return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: hotelModels.length,
             itemBuilder: (context, index) {
               final place = hotelModels[index];
               final hotelId = place.id;
 
-             
-
               return Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 4,
-              child: Row(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 4,
+                child: Row(
                   children: [
                     // LEFT IMAGE
                     ClipRRect(
                       borderRadius: const BorderRadius.horizontal(
                         left: Radius.circular(14),
                       ),
-                      child: Image.network(
-                        place.image1,
-                        height: 95,
-                        width: 110,
-                        fit: BoxFit.cover,
-                      ),
+                      child: place.images.isNotEmpty
+                          ? Image.network(
+                              place.images[0],
+                              height: 95,
+                              width: 110,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const SizedBox(
+                                    height: 95,
+                                    width: 110,
+                                    child: Icon(Icons.broken_image),
+                                  ),
+                            )
+                          : const SizedBox(
+                              height: 95,
+                              width: 110,
+                              child: Icon(Icons.image_not_supported),
+                            ),
                     ),
 
                     // CENTER TEXT
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               place.hotel,
                               style: const TextStyle(
-                                  fontSize: 17, fontWeight: FontWeight.w600),
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               "₹${place.pricePerday}",
                               style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
                             ),
                           ],
                         ),
@@ -98,20 +112,20 @@ class _HotelpageState extends State<Hotelpage> {
                       value: selecthotelids.contains(place.id),
                       onChanged: (value) {
                         log(value.toString());
-                       
-                          if (value==true) {
-                            selecthotelids.add(place.id);
-                          } else {
-                            selecthotelids.remove(place.id);
-                          }
 
-                          selectedHotels.clear();
-                          for (var i = 0; i < hotelModels.length; i++) {
-                            if (selecthotelids.contains(hotelModels[i].id)) {
-                              selectedHotels.add(hotelModels[i]);
-                            }
+                        if (value == true) {
+                          selecthotelids.add(place.id);
+                        } else {
+                          selecthotelids.remove(place.id);
+                        }
+
+                        selectedHotels.clear();
+                        for (var i = 0; i < hotelModels.length; i++) {
+                          if (selecthotelids.contains(hotelModels[i].id)) {
+                            selectedHotels.add(hotelModels[i]);
                           }
-                         setState(() {});
+                        }
+                        setState(() {});
                       },
                     ),
                   ],
@@ -129,7 +143,9 @@ class _HotelpageState extends State<Hotelpage> {
           onPressed: () async {
             if (selectedHotels.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Please select at least one hotel")),
+                const SnackBar(
+                  content: Text("Please select at least one hotel"),
+                ),
               );
               return;
             }
@@ -138,11 +154,7 @@ class _HotelpageState extends State<Hotelpage> {
               const SnackBar(content: Text("Hotels Saved Successfully!")),
             );
 
-
-            Navigator.pop(context,
-              selectedHotels
-
-            );
+            Navigator.pop(context, selectedHotels);
           },
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -150,17 +162,16 @@ class _HotelpageState extends State<Hotelpage> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            "Submit",
-            style: TextStyle(fontSize: 18),
-          ),
+          child: const Text("Submit", style: TextStyle(fontSize: 18)),
         ),
       ),
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-              context, MaterialPageRoute(builder: (context) => Addhotel()));
+            context,
+            MaterialPageRoute(builder: (context) => Addhotel()),
+          );
         },
         child: const Icon(Icons.add),
       ),

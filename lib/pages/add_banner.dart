@@ -51,7 +51,7 @@ class _AddBannerState extends State<AddBanner> {
   Future<void> _loadPlaceDetails() async {
     try {
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('Places')
+          .collection('Placess')
           .where('place', isEqualTo: widget.place)
           .limit(1)
           .get();
@@ -74,7 +74,7 @@ class _AddBannerState extends State<AddBanner> {
   Future<void> _fetchCompletePlace(String placeId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('Places')
+          .collection('Placess')
           .doc(placeId)
           .get();
 
@@ -278,7 +278,7 @@ class _AddBannerState extends State<AddBanner> {
             const SizedBox(height: 10),
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('Places')
+                  .collection('Placess')
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {

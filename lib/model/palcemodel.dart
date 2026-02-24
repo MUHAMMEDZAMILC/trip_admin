@@ -15,13 +15,14 @@ class PlaceModel {
   List<Activity>? activity;
   List<Hotel>? hotels;
   String? description;
-  String? basePackagePrice;
+  String?  basePackagePrice;
   Mainplace? mainplace;
   String? place;
   String? image2;
   List<Meal>? meals;
   List<Nearbymodel>? nearby;
   int? status;
+  List<String>? images;
 
   PlaceModel({
     this.image,
@@ -35,42 +36,64 @@ class PlaceModel {
     this.meals,
     this.nearby,
     this.status,
+    this.images,
   });
 
-  factory PlaceModel.fromJson(Map<String, dynamic> json) => PlaceModel(
-    image: json["image"],
-    activity: json["activity"] == null
+  factory PlaceModel.fromJson(Map<String, dynamic> json) {
+    List<String> imagesList = json["images"] == null
         ? []
-        : List<Activity>.from(json["activity"]!.map((x) => Activity.fromJson(x))),
-    hotels: json["hotels"] == null
-        ? []
-        : List<Hotel>.from(json["hotels"]!.map((x) => Hotel.fromJson(x))),
-    description: json["description"],
-    basePackagePrice: json['BasePrice'],
-    mainplace: json["mainplace"] == null ? null : Mainplace.fromJson(json["mainplace"]),
-    place: json["place"],
-    image2: json["image2"],
-    meals: json["meals"] == null
-        ? []
-        : List<Meal>.from(json["meals"]!.map((x) => Meal.fromJson(x))),
-    nearby: json["nearby"] == null
-        ? []
-        : List<Nearbymodel>.from(json["nearby"].map((x) => Nearbymodel.fromJson(x))),
-    status: json["status"],
-  );
+        : List<String>.from(json["images"]);
+    return PlaceModel(
+      image: json["image"] ?? (imagesList.isNotEmpty ? imagesList[0] : null),
+      activity: json["activity"] == null
+          ? []
+          : List<Activity>.from(
+              json["activity"]!.map((x) => Activity.fromJson(x)),
+            ),
+      hotels: json["hotels"] == null
+          ? []
+          : List<Hotel>.from(json["hotels"]!.map((x) => Hotel.fromJson(x))),
+      description: json["description"],
+      basePackagePrice: json['BasePrice'],
+      mainplace: json["mainplace"] == null
+          ? null
+          : Mainplace.fromJson(json["mainplace"]),
+      place: json["place"],
+      image2: json["image2"],
+      meals: json["meals"] == null
+          ? []
+          : List<Meal>.from(json["meals"]!.map((x) => Meal.fromJson(x))),
+      nearby: json["nearby"] == null
+          ? []
+          : List<Nearbymodel>.from(
+              json["nearby"].map((x) => Nearbymodel.fromJson(x)),
+            ),
+      status: json["status"],
+      images: imagesList,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     "image": image,
-    "activity": activity == null ? [] : List<dynamic>.from(activity!.map((x) => x.toJson())),
-    "hotels": hotels == null ? [] : List<dynamic>.from(hotels!.map((x) => x.toJson())),
+    "activity": activity == null
+        ? []
+        : List<dynamic>.from(activity!.map((x) => x.toJson())),
+    "hotels": hotels == null
+        ? []
+        : List<dynamic>.from(hotels!.map((x) => x.toJson())),
     "description": description,
     "BasePrice": basePackagePrice,
     "mainplace": mainplace?.toJson(),
     "place": place,
     "image2": image2,
-    "meals": meals == null ? [] : List<dynamic>.from(meals!.map((x) => x.toJson())),
-    "nearby": nearby == null ? [] : List<dynamic>.from(nearby!.map((x) => x.toJson())),
+    "meals": meals == null
+        ? []
+        : List<dynamic>.from(meals!.map((x) => x.toJson())),
+    "nearby": nearby == null
+        ? []
+        : List<dynamic>.from(nearby!.map((x) => x.toJson())),
     "status": status,
+    "images": images == null ? [] : List<dynamic>.from(images!.map((x) => x)),
   };
 }
 
@@ -201,8 +224,11 @@ class Nearbymodel {
 
   Nearbymodel({this.title, this.lat, this.log});
 
-  factory Nearbymodel.fromJson(Map<String, dynamic> json) =>
-      Nearbymodel(title: json["title"], lat: json["lat"]?.toDouble(), log: json["log"]?.toDouble());
+  factory Nearbymodel.fromJson(Map<String, dynamic> json) => Nearbymodel(
+    title: json["title"],
+    lat: json["lat"]?.toDouble(),
+    log: json["log"]?.toDouble(),
+  );
 
   Map<String, dynamic> toJson() => {"title": title, "lat": lat, "log": log};
 }

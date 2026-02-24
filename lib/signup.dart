@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:trip_admin/auth/auth.dart';
 
-
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -10,15 +9,13 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
-
   final _userFormKey = GlobalKey<FormState>();
 
-
-  final TextEditingController _userNameController =TextEditingController();
+  final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _userEmailController = TextEditingController();
-  final TextEditingController _useerPasswordController = TextEditingController();
+  final TextEditingController _useerPasswordController =
+      TextEditingController();
 
-  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,27 +56,39 @@ class _SignupState extends State<Signup> {
                     children: [
                       const SizedBox(height: 130),
                       const Icon(Icons.connecting_airports_outlined, size: 90),
-                  
+
                       const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                           Padding(
-                      padding: const EdgeInsets.only(left: 20,),
-                      child: Row(
-                        children: [
-                          Text("Sign",style: TextStyle(fontSize: 50,color: Colors.orange,fontWeight: FontWeight.bold),),
-                          Text("In",style: TextStyle(fontSize: 50,color: Colors.white,fontWeight: FontWeight.bold),)
-                      
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: Row(
+                              children: [
+                                Text(
+                                  "Sign",
+                                  style: TextStyle(
+                                    fontSize: 50,
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "In",
+                                  style: TextStyle(
+                                    fontSize: 50,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                         
-                        ],
-                      ),
-                  
+
                       const SizedBox(height: 50),
-                  
+
                       // Username Field
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -88,7 +97,6 @@ class _SignupState extends State<Signup> {
                           decoration: const InputDecoration(
                             prefixIcon: Icon(Icons.person),
                             hintText: "User Name",
-                         
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -98,12 +106,11 @@ class _SignupState extends State<Signup> {
                             }
                             return null;
                           },
-
                         ),
                       ),
-                  
+
                       const SizedBox(height: 25),
-                  
+
                       // Email Field
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
@@ -112,8 +119,6 @@ class _SignupState extends State<Signup> {
                           decoration: const InputDecoration(
                             prefixIcon: Icon(Icons.mail),
                             hintText: "Email",
-                           
-                          
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -121,30 +126,27 @@ class _SignupState extends State<Signup> {
                             }
                             // ✅ Email pattern validation
                             final emailRegex = RegExp(
-                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                            );
                             if (!emailRegex.hasMatch(value)) {
                               return "Enter a valid email address";
                             }
                             return null;
                           },
-                          
                         ),
                       ),
-                  
+
                       const SizedBox(height: 25),
-                  
+
                       // Password Field
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: TextFormField(
                           controller: _useerPasswordController,
                           obscureText: true,
-                          decoration:  InputDecoration(
+                          decoration: InputDecoration(
                             prefixIcon: Icon(Icons.lock),
                             hintText: "Password",
-                          
-                            
-                          
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -156,49 +158,57 @@ class _SignupState extends State<Signup> {
                           },
                         ),
                       ),
-                      SizedBox(height: 25,),
-                       Padding(
+                      SizedBox(height: 25),
+                      Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: TextFormField(
                           obscureText: true,
-                          decoration:  InputDecoration(
+                          decoration: InputDecoration(
                             prefixIcon: Icon(Icons.lock),
                             hintText: " Comform Password",
-                          
-                            
-                          
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Please confirm your password";
-                            } else if (value !=
-                                _useerPasswordController.text) {
+                            } else if (value != _useerPasswordController.text) {
                               return "Passwords do not match";
                             }
                             return null;
                           },
                         ),
                       ),
-                  
-                       SizedBox(height: 100,),
-                     GestureDetector(
-                      onTap: () async{
-                        if(_userFormKey.currentState!.validate()){
-                          await Authservice().signup(email: _userEmailController.text,password: _useerPasswordController.text,username: _userNameController.text);
-                          Navigator.pop(context);
-                        }
-                  
-                                },
-                                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: Colors.amber,
-                  ),
-                  height: 45,width: 190,
-                  
-                  child: Center(child: Text("Sign up",style: TextStyle(fontWeight: FontWeight.bold,fontSize: 18),)),
-                                ),
+
+                      SizedBox(height: 100),
+                      GestureDetector(
+                        onTap: () async {
+                          if (_userFormKey.currentState!.validate()) {
+                            await Authservice().signup(
+                              email: _userEmailController.text,
+                              password: _useerPasswordController.text,
+                              username: _userNameController.text,
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.amber,
+                          ),
+                          height: 45,
+                          width: 190,
+
+                          child: Center(
+                            child: Text(
+                              "Sign up",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
                               ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

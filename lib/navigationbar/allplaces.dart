@@ -29,7 +29,7 @@ class _AllPlacesState extends State<AllPlaces> {
             onPressed: () async {
               Navigator.pop(context);
               await FirebaseFirestore.instance
-                  .collection('Places')
+                  .collection('Placess')
                   .doc(id)
                   .delete();
             },
@@ -56,15 +56,13 @@ class _AllPlacesState extends State<AllPlaces> {
       ),
       body: SingleChildScrollView(
         child: StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance.collection('Places').snapshots(),
+          stream: FirebaseFirestore.instance.collection('Placess').snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
             final placesDocs = snapshot.data!.docs;
-            // Limit to 3 items for the home page list
-            final limitedPlaces = placesDocs.take(3).toList();
-            final placesModelList = limitedPlaces
+            final placesModelList = placesDocs
                 .map(
                   (doc) =>
                       PlaceModel.fromJson(doc.data() as Map<String, dynamic>),
@@ -77,7 +75,7 @@ class _AllPlacesState extends State<AllPlaces> {
               itemCount: placesModelList.length,
               itemBuilder: (context, index) {
                 final place = placesModelList[index];
-                final docId = limitedPlaces[index].id;
+                final docId = placesDocs[index].id;
                 return Padding(
                   padding: EdgeInsets.only(bottom: 20.h),
                   child: GestureDetector(
@@ -116,8 +114,12 @@ class _AllPlacesState extends State<AllPlaces> {
                               child: Stack(
                                 children: [
                                   Image.network(
-                                    place.image ?? '',
+                                    (place.images != null &&
+                                            place.images!.isNotEmpty)
+                                        ? place.images![0]
+                                        : (place.image ?? ''),
                                     width: double.infinity,
+                                    height: double.infinity,
                                     fit: BoxFit.cover,
                                     errorBuilder:
                                         (context, error, stackTrace) =>

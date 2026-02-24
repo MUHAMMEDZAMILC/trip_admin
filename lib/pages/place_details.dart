@@ -24,7 +24,9 @@ class PlaceDetails extends StatelessWidget {
                 ),
               ),
               background: Image.network(
-                placedtl.image ?? "",
+                (placedtl.images != null && placedtl.images!.isNotEmpty)
+                    ? placedtl.images![0]
+                    : (placedtl.image ?? ""),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: Colors.grey,
@@ -39,6 +41,39 @@ class PlaceDetails extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (placedtl.images != null &&
+                      placedtl.images!.length > 1) ...[
+                    Text(
+                      "Gallery",
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    SizedBox(
+                      height: 100.h,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: placedtl.images!.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: EdgeInsets.only(right: 10.w),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: Image.network(
+                                placedtl.images![index],
+                                width: 150.w,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                  ],
+
                   if (placedtl.description != null) ...[
                     Text(
                       "Description",
@@ -153,6 +188,32 @@ class PlaceDetails extends StatelessWidget {
                           title: Text(meal.title ?? "Meal"),
                           subtitle: Text(meal.items ?? ""),
                           trailing: Text(meal.price ?? ''),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                  ],
+
+                  if (placedtl.nearby != null &&
+                      placedtl.nearby!.isNotEmpty) ...[
+                    Text(
+                      "Nearby Places",
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    ...placedtl.nearby!.map(
+                      (near) => Card(
+                        margin: EdgeInsets.only(bottom: 10.h),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.location_on,
+                            color: Colors.indigo,
+                          ),
+                          title: Text(near.title ?? "Nearby Location"),
+                          subtitle: Text("Lat: ${near.lat}, Log: ${near.log}"),
                         ),
                       ),
                     ),
